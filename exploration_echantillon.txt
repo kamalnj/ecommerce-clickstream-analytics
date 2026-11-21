@@ -1,0 +1,33 @@
+Lignes : 2,000,000
+Période : 2019-10-01 00:00:00 UTC  ->  2019-10-02 14:18:42 UTC
+
+--- Valeurs vides par colonne ---
+event_time               0  (0.0 %)
+event_type               0  (0.0 %)
+product_id               0  (0.0 %)
+category_id              0  (0.0 %)
+category_code      636,448  (31.8 %)
+brand              297,522  (14.9 %)
+price                    0  (0.0 %)
+user_id                  0  (0.0 %)
+user_session             0  (0.0 %)
+
+--- Doublons exacts (ligne identique) ---
+881
+
+--- Volumes distincts ---
+Visiteurs (user_id)      : 295,883
+Sessions (user_session)  : 446,930
+Produits (product_id)    : 81,476
+
+--- Prix ---
+count    2000000.00
+mean         296.94
+std          370.10
+min            0.00
+25%           64.08
+50%          161.91
+75%          362.77
+max         2574.07
+Name: price, dtype: float64
+Prix négatifs ou nuls : 3,433
