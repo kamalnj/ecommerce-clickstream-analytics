@@ -1,0 +1,9 @@
+# Données (trop lourdes pour GitHub)
+data/
+
+# Environnement virtuel Python
+.venv/
+
+# Fichiers temporaires Python
+__pycache__/
+*.pyc
