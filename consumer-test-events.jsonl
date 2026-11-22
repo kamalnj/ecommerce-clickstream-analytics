@@ -1,0 +1,5 @@
+{"event_time":"2026-11-22T12:20:00Z","event_type":"view","product_id":1001,"category_id":"cat001","category_code":"electronics.smartphone","brand":"test","price":199.99,"user_id":900001,"user_session":"test-session-001"}
+{"event_time":"2026-11-22T12:20:01Z","event_type":"cart","product_id":1001,"category_id":"cat001","category_code":"electronics.smartphone","brand":"test","price":199.99,"user_id":900001,"user_session":"test-session-001"}
+{"event_time":"2026-11-22T12:20:02Z","event_type":"view","product_id":2002,"category_id":"cat002","category_code":"electronics.audio","brand":"test","price":89.50,"user_id":900002,"user_session":"test-session-002"}
+{"event_time":"2026-11-22T12:20:03Z","event_type":"cart","product_id":2002,"category_id":"cat002","category_code":"electronics.audio","brand":"test","price":89.50,"user_id":900002,"user_session":"test-session-002"}
+{"event_time":"2026-11-22T12:20:04Z","event_type":"purchase","product_id":1001,"category_id":"cat001","category_code":"electronics.smartphone","brand":"test","price":199.99,"user_id":900001,"user_session":"test-session-001"}

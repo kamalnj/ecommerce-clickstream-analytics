@@ -68,5 +68,103 @@ services:
     restart: "no"
     command: ["--fichier", "/donnees/sample_200k.csv", "--mode", "rejeu", "--vitesse", "600", "--limite", "200000"]
 
+
+  
+  
+  hdfs-permissions:
+    image: apache/hadoop:3.5.0
+    container_name: hdfs-permissions
+    user: "0:0"
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - "mkdir -p /hadoop/dfs/name /hadoop/dfs/data && chown -R 1001:100 /hadoop/dfs/name /hadoop/dfs/data"
+    volumes:
+      - hdfs-namenode-data:/hadoop/dfs/name
+      - hdfs-datanode-data:/hadoop/dfs/data
+    restart: "no"
+
+  namenode:
+    image: apache/hadoop:3.5.0
+    container_name: namenode
+    depends_on:
+      hdfs-permissions:
+        condition: service_completed_successfully
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - ./hadoop/config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./hadoop/config/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - hdfs-namenode-data:/hadoop/dfs/name
+    command:
+      - /bin/bash
+      - -c
+      - |
+        if [ ! -f /hadoop/dfs/name/current/VERSION ]; then
+          echo "Premier démarrage : formatage du NameNode"
+          /opt/hadoop/bin/hdfs namenode -format -nonInteractive
+        fi
+        echo "Démarrage du NameNode"
+        exec /opt/hadoop/bin/hdfs namenode
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /opt/hadoop/bin/hdfs dfsadmin -report >/dev/null 2>&1
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  datanode:
+    image: apache/hadoop:3.5.0
+    container_name: datanode
+    depends_on:
+      hdfs-permissions:
+        condition: service_completed_successfully
+      namenode:
+        condition: service_healthy
+    environment:
+      WAITFOR: namenode:9000
+      WAITFOR_TIMEOUT: 120
+    ports:
+      - "9864:9864"
+    volumes:
+      - ./hadoop/config/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./hadoop/config/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - hdfs-datanode-data:/hadoop/dfs/data
+    command: ["/opt/hadoop/bin/hdfs", "datanode"]
+    restart: unless-stopped
+
+
+  consumer-hdfs:
+    build:
+      context: ./consumer
+      dockerfile: Dockerfile
+    image: consumer-hdfs
+    container_name: consumer-hdfs
+    profiles: ["consumer"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      namenode:
+        condition: service_healthy
+      datanode:
+        condition: service_started
+    environment:
+      KAFKA_BOOTSTRAP: kafka:19092
+      KAFKA_TOPIC: evenements_web
+      KAFKA_GROUP_ID: hdfs-bronze-consumer
+      HDFS_URL: http://namenode:9870
+      HDFS_USER: hadoop
+      BATCH_SIZE: "1000"
+      BATCH_TIMEOUT: "10"
+      AUTO_OFFSET_RESET: earliest
+    restart: unless-stopped
+
+
+
 volumes:
   kafka-data:
+  hdfs-namenode-data:
+  hdfs-datanode-data:
