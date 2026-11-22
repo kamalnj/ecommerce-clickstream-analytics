@@ -1,4 +1,5 @@
 import argparse
+import os
 import json
 import time
 import pandas as pd
@@ -15,7 +16,7 @@ ap.add_argument("--fichier", default="data/sample.csv")
 args = ap.parse_args()
 
 TOPIC = "evenements_web"
-producer = Producer({"bootstrap.servers": "localhost:9092"})
+producer = Producer({"bootstrap.servers": os.environ.get("KAFKA_BOOTSTRAP", "localhost:9092")})
 confirmes = 0
 erreurs = 0
 

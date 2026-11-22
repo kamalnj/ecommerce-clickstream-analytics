@@ -20,17 +20,53 @@ services:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  kafka-init:
+    image: apache/kafka:3.8.0
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "/opt/kafka/bin/kafka-topics.sh --create --if-not-exists
+      --topic evenements_web --partitions 3 --replication-factor 1
+      --bootstrap-server kafka:19092 &&
+      /opt/kafka/bin/kafka-topics.sh --describe --topic evenements_web
+      --bootstrap-server kafka:19092"
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+
+  producteur:
+    build: .
+    image: producteur-kafka
+    profiles: ["producteur"]
+    container_name: producteur
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP: kafka:19092
+    volumes:
+      - ./echantillon:/donnees:ro
+    restart: "no"
+    command: ["--fichier", "/donnees/sample_200k.csv", "--mode", "rejeu", "--vitesse", "600", "--limite", "200000"]
 
 volumes:
   kafka-data:
