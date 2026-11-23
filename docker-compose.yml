@@ -137,6 +137,20 @@ services:
     restart: unless-stopped
 
 
+  spark:
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    image: local-pyspark:3.5.1
+    profiles: ["spark"]
+    working_dir: /app
+    volumes:
+      - ./spark:/app:ro
+      - ./hadoop/config:/opt/hadoop/etc/hadoop:ro
+    environment:
+      HADOOP_CONF_DIR: /opt/hadoop/etc/hadoop
+      HADOOP_USER_NAME: hadoop
+
   consumer-hdfs:
     build:
       context: ./consumer
