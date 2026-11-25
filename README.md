@@ -129,3 +129,61 @@ docker exec namenode hdfs dfs -ls -R /rejects/evenements_web
 ```
 
 Les données Silver et Rejects sont enregistrées au format Parquet.
+
+## Partie 3 : Traitement analytique Spark Gold (Couche Métier)
+
+La couche **Gold** transforme les données nettoyées de la couche Silver en tables analytiques prêtes pour la visualisation et le décisionnel. Les tables sont enregistrées au format **Parquet**, partitionnées par `event_date`.
+
+### 1. Tables générées et règles de gestion
+
+Les 4 tables produites sous `/gold/evenements_web/` sont :
+
+| Table | Granularité | Description & Règles métier |
+|---|---|---|
+| **`daily_metrics`** | 1 ligne par `event_date` | Volumes quotidiens de clics (`total_events`, `total_views`, `total_carts`, `total_purchases`), décompte des utilisateurs et sessions uniques (`unique_users`, `unique_sessions`), et montant total associé aux achats (`purchase_value`). |
+| **`conversion_metrics`** | 1 ligne par `event_date` | Entonnoir (funnel) de conversion chronologique strict par session :<br>• `sessions_with_views` : sessions avec au moins 1 vue.<br>• `sessions_with_carts` : sessions avec un panier postérieur à la première vue.<br>• `sessions_with_purchases` : sessions avec un achat postérieur au premier panier valide.<br>• Taux de conversion : `view_to_cart_rate`, `cart_to_purchase_rate`, `view_to_purchase_rate` (sécurisés contre la division par zéro). |
+| **`product_performance`** | 1 ligne par `event_date` + `product_id` | Analyse de la performance produit. Les attributs (`brand`, `category_id`, `category_code`) sont déterminés de manière déterministe via la première valeur non nulle dans l'ordre chronologique (`event_time`, `kafka_partition`, `kafka_offset`). |
+| **`category_performance`** | 1 ligne par `event_date` + `category_id` | Analyse de la performance des catégories. Seuls les événements où `category_id` est NULL sont exclus. Le `category_code` représentatif est le premier non nul chronologiquement. |
+
+> **Note sur `purchase_value`** : En l'absence de véritable identifiant de commande (`order_id`) dans le jeu de données d'origine, cette métrique correspond à la somme des prix des événements de type `purchase` et non à un chiffre d'affaires certifié de transactions consolidées.
+
+### 2. Exécuter les tests unitaires Gold
+
+```bash
+docker compose run --rm spark python -m unittest discover -s /app/tests -p "test_silver_to_gold.py" -v
+```
+
+Résultat attendu :
+```text
+Ran 9 tests in X.Xs
+
+OK
+```
+
+### 3. Exécuter le pipeline Silver → Gold
+
+```bash
+docker compose run --rm spark spark-submit \
+  --master "local[2]" \
+  /app/jobs/silver_to_gold.py \
+  --input "hdfs://namenode:9000/silver/evenements_web/date=YYYY-MM-DD" \
+  --output-dir "hdfs://namenode:9000/gold/evenements_web"
+```
+
+*Remarque :* Le job effectue une vérification pré-vol de non-écrasement (`mode("errorifexists")`) pour protéger les tables existantes.
+
+### 4. Vérifier les données dans HDFS Gold
+
+```bash
+docker exec namenode hdfs dfs -ls -R /gold/evenements_web
+```
+
+Structure attendue dans HDFS :
+```text
+/gold/evenements_web/
+├── daily_metrics/event_date=YYYY-MM-DD/
+├── conversion_metrics/event_date=YYYY-MM-DD/
+├── product_performance/event_date=YYYY-MM-DD/
+└── category_performance/event_date=YYYY-MM-DD/
+```
+
