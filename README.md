@@ -1,5 +1,17 @@
 # Projet Big Data IL-02 - Parcours client e-commerce
 
+## ⚡ Démarrage rapide (Pipeline automatique Bronze → Silver → Gold)
+
+Pour exécuter automatiquement l'intégralité du pipeline de bout en bout (démarrage Docker, envoi Kafka, ingestion HDFS Bronze, transformations Spark Silver et Gold) :
+
+```cmd
+.\run_pipeline.bat
+```
+
+Ce script automatise les 6 étapes réelles décrites ci-dessous et prépare toutes les tables Gold dans HDFS pour les étapes suivantes.
+
+---
+
 ## Partie 1 : collecte, Python et Kafka (Kamal Ennaji)
 
 ### Démarrer la plateforme
