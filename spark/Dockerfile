@@ -1,4 +1,5 @@
-﻿FROM python:3.11-slim-bookworm
+﻿
+FROM python:3.11-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
@@ -18,5 +19,8 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Dependances Spark MLlib - Partie 3
+RUN pip install --no-cache-dir --timeout 600 --retries 10 numpy==1.26.4
 
 CMD ["bash"]
